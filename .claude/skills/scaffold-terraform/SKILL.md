@@ -293,12 +293,12 @@ After scaffolding any file, the following must hold:
 
 ## CI workflow shape
 
-`.github/workflows/ci.yaml` runs the following jobs on pushes/PRs to `main`, `feature/**`, and `bug/**` when root-level `*.tf`, `examples/**`, or `test/**` files change. The workflow's default `TF_VERSION` is `1.5.0` (override with the `TERRAFORM_VERSION` repo variable) so `terraform init` resolves `versions.tf`'s `required_version = ">= 1.5.0"`.
+`.github/workflows/ci.yaml` runs the following jobs on pushes/PRs to `main`, `feature/**`, and `bug/**` when root-level `*.tf`, `examples/**`, or `tests/**` files change. The workflow's default `TF_VERSION` is `1.5.0` (override with the `TERRAFORM_VERSION` repo variable) so `terraform init` resolves `versions.tf`'s `required_version = ">= 1.5.0"`. The default `GO_VERSION` is `1.22` (override with `GO_VERSION` repo variable) to match `tests/go.mod`.
 
 1. **terraform-validate** — `fmt -check`, `init`, `validate` on the root module
 2. **examples-validate** — matrix over every directory under `examples/` (currently `examples/basic` and `examples/secure-view`); needs `terraform-validate`
-3. **terratest** — Go integration test against a real Snowflake account; needs `examples-validate`. Required inputs: repo vars `SNOWFLAKE_ORGANIZATION_NAME`, `SNOWFLAKE_ACCOUNT_NAME`, `SNOWFLAKE_USER`, `SNOWFLAKE_ROLE`, plus repo secret `SNOWFLAKE_PRIVATE_KEY`
+3. **terratest** (`Snowflake View Terratest`) — runs `go test -run TestSnowflakeViewBasic` from `tests/` against a real Snowflake account; needs `examples-validate`. Required inputs: repo secrets `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, and repo vars `SNOWFLAKE_TEST_DATABASE`, `SNOWFLAKE_TEST_SCHEMA`
 4. **generate-changelog** — `git-cliff` on non-`main` branches; needs `examples-validate`
 5. **semantic-release** — `main`-only; needs `examples-validate` and `terratest`
 
-The current on-disk workflow does **not** invoke `utils/lint.sh` (no `tflint` / `trivy` install), does **not** run a `docs-drift` job, and does **not** call `utils/update-badge.sh`. Treat those as local-only gates until the CI is extended. The `terratest` job's path filter (`test/**`), `working-directory: test`, test selectors (`TestSingleWarehouse` / `TestMultipleWarehouses`), and env var names (`SNOWFLAKE_ORGANIZATION_NAME`, `SNOWFLAKE_ACCOUNT_NAME`) are leftovers from the upstream warehouse template — the actual Go code lives in `tests/` (plural) with a single `TestSnowflakeViewBasic` entrypoint that reads `SNOWFLAKE_ACCOUNT` and `SNOWFLAKE_USER`. Re-align the `terratest` job before relying on it.
+Local-only gates (not invoked from CI): `utils/lint.sh` (tflint + trivy), the docs-drift check (`utils/generate-docs.sh` + `utils/align-md-tables.py` followed by `git diff --exit-code README.md`), and `utils/update-badge.sh`. Run these via `pre-commit` before pushing until the corresponding CI jobs are added back.
