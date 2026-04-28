@@ -57,8 +57,8 @@ terraform {
 
   required_providers {
     snowflake = {
-      source  = "Snowflake-Labs/snowflake"
-      version = ">= 0.95.0, < 1.0.0"
+      source  = "snowflakedb/snowflake"
+      version = ">= 1.0.0"
     }
   }
 }
@@ -169,8 +169,8 @@ terraform {
 
   required_providers {
     snowflake = {
-      source  = "Snowflake-Labs/snowflake"
-      version = ">= 0.95.0, < 1.0.0"
+      source  = "snowflakedb/snowflake"
+      version = ">= 1.0.0"
     }
   }
 }

@@ -61,10 +61,10 @@ The map key (e.g. `customer_basic`) is a logical Terraform identifier used in `f
 
 ## Requirements
 
-| Name      | Version            |
-| --------- | ------------------ |
-| terraform | >= 1.5.0           |
-| snowflake | >= 0.95.0, < 1.0.0 |
+| Name      | Version  |
+| --------- | -------- |
+| terraform | >= 1.5.0 |
+| snowflake | >= 1.0.0 |
 
 ## Inputs
 

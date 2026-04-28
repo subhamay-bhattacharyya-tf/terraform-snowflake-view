@@ -58,8 +58,8 @@ terraform {
 
   required_providers {
     snowflake = {
-      source  = "Snowflake-Labs/snowflake"
-      version = ">= 0.95.0, < 1.0.0"
+      source  = "snowflakedb/snowflake"
+      version = ">= 1.0.0"
     }
   }
 }
@@ -69,8 +69,8 @@ terraform {
 
 - Exactly one `terraform { ... }` block
 - Exactly one provider declared: `snowflake`
-- `source` must be `Snowflake-Labs/snowflake` (not `snowflakedb/snowflake` until the repo migrates)
-- `version` must use a range with both lower and upper bounds — never an unpinned `>= x.y.z` alone
+- `source` must be `snowflakedb/snowflake` (the post-rename provider; the legacy `Snowflake-Labs/snowflake` source is no longer accepted)
+- `version` must be `>= 1.0.0` — a single lower bound, no upper cap, so consumers stay free to track newer provider releases
 - `required_version` for Terraform itself is `>= 1.5.0` (matches the lowest version that supports `optional()` defaults in object types)
 
 **Forbidden:**
@@ -212,8 +212,8 @@ terraform {
 
   required_providers {
     snowflake = {
-      source  = "Snowflake-Labs/snowflake"
-      version = ">= 0.95.0, < 1.0.0"
+      source  = "snowflakedb/snowflake"
+      version = ">= 1.0.0"
     }
   }
 }
