@@ -12,9 +12,11 @@
 - *(ci)* Align terratest job with the Snowflake-views Go entrypoint
 - *(ci)* Hardcode GO_VERSION to 1.22 in terratest job
 - *(tests)* Skip Snowflake integration test when env vars are absent
+- *(.gitignore)* Add .terraform* to ignore all Terraform-related files
 
 ### 📚 Documentation
 
+- Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
