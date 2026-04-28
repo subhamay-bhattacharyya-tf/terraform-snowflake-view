@@ -10,9 +10,11 @@
 
 - *(ci)* Bump default Terraform version to 1.5.0 to match required_version
 - *(ci)* Align terratest job with the Snowflake-views Go entrypoint
+- *(ci)* Hardcode GO_VERSION to 1.22 in terratest job
 
 ### 📚 Documentation
 
+- Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
