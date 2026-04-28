@@ -89,7 +89,7 @@ jobs:
     needs: examples-validate
     env:
       TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.5.0' }}
-      GO_VERSION: ${{ vars.GO_VERSION || '1.22' }}
+      GO_VERSION: '1.22'
     steps:
       - name: Checkout
         uses: actions/checkout@v6

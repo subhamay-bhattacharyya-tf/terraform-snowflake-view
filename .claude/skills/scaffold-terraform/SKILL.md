@@ -293,7 +293,7 @@ After scaffolding any file, the following must hold:
 
 ## CI workflow shape
 
-`.github/workflows/ci.yaml` runs the following jobs on pushes/PRs to `main`, `feature/**`, and `bug/**` when root-level `*.tf`, `examples/**`, or `tests/**` files change. The workflow's default `TF_VERSION` is `1.5.0` (override with the `TERRAFORM_VERSION` repo variable) so `terraform init` resolves `versions.tf`'s `required_version = ">= 1.5.0"`. The default `GO_VERSION` is `1.22` (override with `GO_VERSION` repo variable) to match `tests/go.mod`.
+`.github/workflows/ci.yaml` runs the following jobs on pushes/PRs to `main`, `feature/**`, and `bug/**` when root-level `*.tf`, `examples/**`, or `tests/**` files change. The workflow's default `TF_VERSION` is `1.5.0` (override with the `TERRAFORM_VERSION` repo variable) so `terraform init` resolves `versions.tf`'s `required_version = ">= 1.5.0"`. `GO_VERSION` is hardcoded to `1.22` to match `tests/go.mod`; do not introduce a repo-variable override.
 
 1. **terraform-validate** — `fmt -check`, `init`, `validate` on the root module
 2. **examples-validate** — matrix over every directory under `examples/` (currently `examples/basic` and `examples/secure-view`); needs `terraform-validate`
