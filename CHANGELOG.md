@@ -23,7 +23,9 @@
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
+- Update CHANGELOG.md [skip ci]
 
 ### ⚙️ Miscellaneous Tasks
 
 - Set FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 for GitHub Actions compatibility
+- Upgrade hashicorp/setup-terraform to v4 and remove deprecated Node.js 20 action
