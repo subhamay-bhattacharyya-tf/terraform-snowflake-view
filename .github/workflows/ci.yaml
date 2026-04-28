@@ -1,5 +1,5 @@
-name: Terraform CI
-run-name: CI run by ${{ github.actor }} on ${{ github.ref_name }}
+name: Snowflake View Terraform CI
+run-name: snowflake-view CI by ${{ github.actor }} on ${{ github.ref_name }}
 
 on:
   push:
@@ -8,29 +8,34 @@ on:
       - 'feature/**'
       - 'bug/**'
     paths:
-      - modules/**
+      - '*.tf'
+      - 'examples/**'
+      - 'tests/**'
+      - 'utils/**'
+      - '.github/workflows/ci.yaml'
   pull_request:
     branches: [main]
     paths:
-      - modules/**
+      - '*.tf'
+      - 'examples/**'
+      - 'tests/**'
+      - 'utils/**'
+      - '.github/workflows/ci.yaml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.5.0' }}
+
 jobs:
   # ============================================================================
-  # Terraform Validate
+  # Validate the snowflake-view module (fmt + init + validate + lint)
   # ============================================================================
   terraform-validate:
-    name: Terraform Validate
+    name: Snowflake View Terraform Validate
     runs-on: ubuntu-latest
-    env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
-    strategy:
-      matrix:
-        module:
-          - modules/snowflake-warehouse
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -42,62 +47,28 @@ jobs:
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
-        working-directory: ${{ matrix.module }}
 
       - name: Terraform Init
         run: terraform init -backend=false
-        working-directory: ${{ matrix.module }}
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ${{ matrix.module }}
+
+      - name: Lint (tflint + trivy)
+        run: bash utils/lint.sh
 
   # ============================================================================
-  # Property Tests
-  # ============================================================================
-  property-tests:
-    name: Property Tests
-    runs-on: ubuntu-latest
-    needs: terraform-validate
-    env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 'lts/*'
-          cache: 'npm'
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Install Dependencies
-        run: npm ci
-        working-directory: tests
-
-      - name: Run Property Tests
-        run: npm test -- --run
-        working-directory: tests
-
-  # ============================================================================
-  # Validate Examples
+  # Validate every example calls the snowflake-view module cleanly
   # ============================================================================
   examples-validate:
-    name: Validate Examples
+    name: Snowflake View Examples Validate
     runs-on: ubuntu-latest
     needs: terraform-validate
-    env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
     strategy:
       matrix:
         example:
-          - examples/snowflake-warehouse
+          - examples/basic
+          - examples/secure-view
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -116,9 +87,91 @@ jobs:
         working-directory: ${{ matrix.example }}
 
   # ============================================================================
-  # Generate Change Log
+  # Real Snowflake integration test against examples/basic via Terratest
   # ============================================================================
+  snowflake-view-terratest:
+    name: Snowflake View Terratest
+    runs-on: ubuntu-latest
+    needs: examples-validate
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.22'
+          cache-dependency-path: tests/go.sum
+
+      - name: Run snowflake-view Terratest
+        run: go test -v -timeout 30m -run TestSnowflakeViewBasic ./...
+        working-directory: tests
+        env:
+          SNOWFLAKE_ACCOUNT:       ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER:          ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PRIVATE_KEY:   ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_ROLE:          ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE:     ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_TEST_DATABASE: ${{ vars.SNOWFLAKE_TEST_DATABASE }}
+          SNOWFLAKE_TEST_SCHEMA:   ${{ vars.SNOWFLAKE_TEST_SCHEMA }}
+
+      - name: Refresh README badge (passing)
+        if: success()
+        env:
+          BADGE_GIST_ID: ${{ secrets.BADGE_GIST_ID }}
+          BADGE_LABEL: snowflake-view
+          BADGE_MESSAGE: passing
+          BADGE_COLOR: brightgreen
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: bash utils/update-badge.sh
+
+  # ============================================================================
+  # Doc drift — README must match the current module surface
+  # ============================================================================
+  docs-drift:
+    name: Snowflake View Docs Drift
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Install terraform-docs
+        run: |
+          curl -sSLo /tmp/td.tar.gz \
+            https://terraform-docs.io/dl/v0.18.0/terraform-docs-v0.18.0-linux-amd64.tar.gz
+          tar -xzf /tmp/td.tar.gz -C /tmp terraform-docs
+          sudo install -m 0755 /tmp/terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
+
+      - name: Regenerate README sections
+        run: bash utils/generate-docs.sh
+
+      - name: Re-align README GFM tables
+        run: python3 utils/align-md-tables.py README.md
+
+      - name: Fail on README drift
+        run: |
+          if ! git diff --quiet -- README.md; then
+            echo "::error::README.md is out of sync with the snowflake-view module surface. Run 'bash utils/generate-docs.sh && python3 utils/align-md-tables.py README.md' locally and commit the result."
+            git --no-pager diff -- README.md
+            exit 1
+          fi
+
+  # ============================================================================
+  # Generate Changelog (non-main branches)
+  # ============================================================================
   generate-changelog:
     name: Generate Changelog
     runs-on: ubuntu-latest
@@ -151,12 +204,12 @@ jobs:
           git push
 
   # ============================================================================
-  # Semantic Release
+  # Semantic Release (main branch only)
   # ============================================================================
   semantic-release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    needs: [property-tests, examples-validate]
+    needs: [snowflake-view-terratest, examples-validate, docs-drift]
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
@@ -175,6 +228,17 @@ jobs:
           node-version: 'lts/*'
 
       - name: Semantic Release
+        id: semrel
         uses: cycjimmy/semantic-release-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refresh README badge (released version)
+        if: steps.semrel.outputs.new_release_published == 'true'
+        env:
+          BADGE_GIST_ID: ${{ secrets.BADGE_GIST_ID }}
+          BADGE_LABEL: snowflake-view
+          BADGE_MESSAGE: v${{ steps.semrel.outputs.new_release_version }}
+          BADGE_COLOR: blue
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+        run: bash utils/update-badge.sh
