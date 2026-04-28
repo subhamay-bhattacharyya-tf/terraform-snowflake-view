@@ -3,6 +3,7 @@
 
 # Terraform lock files
 .terraform.lock.hcl
+.terraform*
 
 # .tfstate files
 *.tfstate
