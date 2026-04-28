@@ -22,3 +22,8 @@
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
 - Update CHANGELOG.md [skip ci]
+- Update CHANGELOG.md [skip ci]
+
+### ⚙️ Miscellaneous Tasks
+
+- Set FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 for GitHub Actions compatibility
