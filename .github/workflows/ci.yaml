@@ -30,7 +30,7 @@ jobs:
     name: Terraform Validate
     runs-on: ubuntu-latest
     env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
+      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.5.0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: terraform-validate
     env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
+      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.5.0' }}
     strategy:
       matrix:
         example:
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: examples-validate
     env:
-      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.3.0' }}
+      TF_VERSION: ${{ vars.TERRAFORM_VERSION || '1.5.0' }}
       GO_VERSION: ${{ vars.GO_VERSION || '1.21' }}
     steps:
       - name: Checkout

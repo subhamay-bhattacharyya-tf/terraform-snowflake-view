@@ -263,14 +263,15 @@ All validation (view type values, secure flag handling, required SQL `statement`
 
 ## CI pipeline (`.github/workflows/ci.yaml`)
 
-Runs on pushes/PRs to `main`, `feature/**`, `bug/**` when root-level `*.tf` files, `examples/**`, `tests/**`, or `utils/**` files change. All job names, step descriptions, and environment variables in this workflow must reference Snowflake views — any leftover references to other services (DynamoDB, S3, GCS, IAM, etc.) from the upstream template must be replaced.
+Runs on pushes/PRs to `main`, `feature/**`, `bug/**` when root-level `*.tf` files, `examples/**`, or `test/**` files change. All job names, step descriptions, and environment variables in this workflow must reference Snowflake views — any leftover references to other services (DynamoDB, S3, GCS, IAM, etc.) from the upstream template must be replaced. The default Terraform version is pinned to `1.5.0` via the `TF_VERSION` env (overridable through the `TERRAFORM_VERSION` repo variable) to satisfy `versions.tf`'s `required_version = ">= 1.5.0"`.
 
-1. **terraform-validate** — `fmt -check`, `init`, `validate` on the root module; also runs `utils/lint.sh` (tflint + trivy)
-2. **examples-validate** — `init` + `validate` on all `examples/*` configurations (`basic`, `secure-view`) (needs step 1)
-3. **terratest** — real Snowflake integration test from the `tests/` directory (needs step 2); requires `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, and `SNOWFLAKE_WAREHOUSE` repo secrets/vars; test job names should reference Snowflake views (e.g., `snowflake-view-terratest`); on success, runs `utils/update-badge.sh` to refresh the README badge
-4. **docs-drift** — runs `utils/generate-docs.sh` and `utils/align-md-tables.py`, then fails if `README.md` has a diff (needs step 1)
-5. **generate-changelog** — runs `git-cliff` on non-main branches (needs step 2)
-6. **semantic-release** — runs only on `main` after steps 2, 3, and 4; uses Conventional Commits to auto-version; on success, runs `utils/update-badge.sh` to refresh the README badge with the new version
+1. **terraform-validate** — `fmt -check`, `init`, `validate` on the root module
+2. **examples-validate** — `init` + `validate` on every example under the `example` matrix (`examples/basic`, `examples/secure-view`) (needs step 1)
+3. **terratest** — real Snowflake integration test from the test working directory (needs step 2); requires `SNOWFLAKE_ORGANIZATION_NAME`, `SNOWFLAKE_ACCOUNT_NAME`, `SNOWFLAKE_USER`, `SNOWFLAKE_ROLE` repo vars and `SNOWFLAKE_PRIVATE_KEY` repo secret; runs two test entrypoints (`TestSingleWarehouse` and `TestMultipleWarehouses`) — these names must be re-aligned to the Snowflake-views Go entrypoints under `tests/` before the job will pass
+4. **generate-changelog** — runs `git-cliff` on non-main branches (needs step 2)
+5. **semantic-release** — runs only on `main` after steps 2 and 3; uses Conventional Commits and the inline `extra_plugins` block to auto-version
+
+Notes about the current on-disk shape vs. the intended Snowflake-views shape: the workflow no longer invokes `utils/lint.sh` (tflint + trivy) inside `terraform-validate`, no longer runs a `docs-drift` job, and no longer calls `utils/update-badge.sh` after `terratest` or `semantic-release`. The `terratest` job's path filter (`test/**`), `working-directory: test`, test selectors (`TestSingleWarehouse` / `TestMultipleWarehouses`), and env var names (`SNOWFLAKE_ORGANIZATION_NAME`, `SNOWFLAKE_ACCOUNT_NAME`) are leftovers from the upstream warehouse template — the actual Go code lives under `tests/` (plural) with a single `TestSnowflakeViewBasic` entrypoint that reads `SNOWFLAKE_ACCOUNT` / `SNOWFLAKE_USER` (and the additional vars listed under the **Tests** section above). Keep this divergence list in mind when editing the workflow or restoring the lint / docs-drift / badge-refresh jobs.
 
 ## Commit message convention
 

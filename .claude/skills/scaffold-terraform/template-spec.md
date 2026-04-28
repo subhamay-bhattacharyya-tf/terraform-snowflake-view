@@ -442,10 +442,12 @@ terraform fmt -check -recursive
 terraform init -backend=false && terraform validate
 ( cd examples/basic && terraform init -backend=false && terraform validate )
 ( cd examples/secure-view && terraform init -backend=false && terraform validate )
-bash utils/lint.sh
+bash utils/lint.sh                               # local-only — not invoked from CI
 bash utils/generate-docs.sh && python utils/align-md-tables.py
-git diff --exit-code README.md       # docs must be in sync
+git diff --exit-code README.md                   # docs must be in sync
 pre-commit run --all-files
 ```
+
+The CI workflow (`.github/workflows/ci.yaml`) runs a reduced subset — `terraform-validate`, `examples-validate`, `terratest`, `generate-changelog`, and `semantic-release` — and **does not** invoke `utils/lint.sh`, the docs-drift gate, or `utils/update-badge.sh`. The default Terraform version is pinned to `1.5.0` (overridable via the `TERRAFORM_VERSION` repo variable) to match `versions.tf`'s `required_version = ">= 1.5.0"`. Anything `lint.sh` / docs-drift / badge would catch must therefore be enforced locally (pre-commit) until the corresponding CI jobs are added back.
 
 If any of these fails on a freshly-scaffolded tree, the scaffolder produced inconsistent output — fix `template-spec.md` (this file) first, then regenerate.
