@@ -9,3 +9,7 @@
 ### 🐛 Bug Fixes
 
 - *(ci)* Bump default Terraform version to 1.5.0 to match required_version
+
+### 📚 Documentation
+
+- Update CHANGELOG.md [skip ci]
