@@ -22,12 +22,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Opt hashicorp/setup-terraform@v3 (and any other Node.js 20 actions) into the
-  # Node.js 24 runtime ahead of the GitHub Actions deprecation deadline (2026-06-02).
-  # Remove this once all referenced actions ship a Node.js 24 release.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
   # ============================================================================
   # Terraform Validate
@@ -42,7 +36,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
@@ -74,7 +68,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
@@ -101,7 +95,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
